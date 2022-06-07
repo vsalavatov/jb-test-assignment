@@ -1,6 +1,7 @@
 package dev.salavatov.sffs
 
 import dev.salavatov.multifs.vfs.*
+import dev.salavatov.sffs.SingleFileFS.Companion.checkNodeNotExists
 
 /**
  * SingleFileFS is a VFS that stores everything in a single file of the local filesystem.
@@ -43,6 +44,21 @@ class SingleFileFS(val path: java.nio.file.Path) : VFS<SingleFileFSFile, SingleF
     private fun File.fromGeneric(): SingleFileFSFile =
         this as? SingleFileFSFile
             ?: throw SingleFileFSException("expected the file to be part of the SingleFileFS (class: ${this.javaClass.kotlin.qualifiedName}")
+
+    companion object {
+        internal fun FileFSAPI.checkNodeNotExists(
+            fileController: FileController,
+            path: AbsolutePath,
+            onExistsMessage: String = "$path exists"
+        ) {
+            try {
+                navigate(fileController, path)
+            } catch (e: NodeNotFoundException) {
+                return
+            }
+            throw SingleFileFSNodeExistsException(onExistsMessage)
+        }
+    }
 }
 
 sealed class SingleFileFSNode(
@@ -69,6 +85,7 @@ open class SingleFileFSFolder(fs: SingleFileFS, name: String, parent: SingleFile
             try {
                 val folderFrag = navigate(fc, absolutePath) as? FolderFragment
                     ?: throw SingleFileFSFolderNotFoundException("$absolutePath is not a folder")
+                checkNodeNotExists(fc, absolutePath + name, "$name already exists in $absolutePath")
                 val fileFrag = fc.putFileFragment(
                     FileReference(NodeReference.INTANGIBLE, fc.size),
                     name,
@@ -91,6 +108,7 @@ open class SingleFileFSFolder(fs: SingleFileFS, name: String, parent: SingleFile
             try {
                 val folderFrag = navigate(fc, absolutePath) as? FolderFragment
                     ?: throw SingleFileFSFolderNotFoundException("$absolutePath is not a folder")
+                checkNodeNotExists(fc, absolutePath + name, "$name already exists in $absolutePath")
                 val subFolder = fc.putFolderFragment(
                     FolderReference(NodeReference.INTANGIBLE, fc.size),
                     name,

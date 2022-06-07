@@ -210,6 +210,16 @@ class SFFSTest {
             assertThrowsBlocking<SingleFileFSFolderNotFoundException> { kek.listFolder() }
             assertThrowsBlocking<SingleFileFSFolderNotFoundException> { folder.listFolder() }
         }
+
+        @Test
+        fun `same name file or folder creation fails`() = runBlocking {
+            fs.root.createFile("file")
+            fs.root.createFolder("folder")
+            assertThrowsBlocking<SingleFileFSNodeExistsException> { fs.root.createFile("file") }
+            assertThrowsBlocking<SingleFileFSNodeExistsException> { fs.root.createFile("folder") }
+            assertThrowsBlocking<SingleFileFSNodeExistsException> { fs.root.createFolder("folder") }
+            assertThrowsBlocking<SingleFileFSNodeExistsException> { fs.root.createFolder("file") }
+        }
     }
 
     @Nested
